@@ -118,20 +118,20 @@ struct BasicGrid: View {
 // 커스텀 그리드 (React의 그리드 컴포넌트와 유사)
 // React: <Grid container spacing={2}> {items.map(item => <Grid item xs={4}><Card item={item} /></Grid>)}
 struct CustomGrid: View {
-    struct GridItem: Identifiable {
+    struct CustomGridItem: Identifiable {
         let id = UUID()
         let title: String
         let color: Color
-        let size: GridItem.Size
+        let size: CustomGridItem.Size
     }
     
     let items = [
-        GridItem(title: "Large", color: .blue, size: .large),
-        GridItem(title: "Medium", color: .green, size: .medium),
-        GridItem(title: "Small", color: .orange, size: .small),
-        GridItem(title: "Large", color: .purple, size: .large),
-        GridItem(title: "Medium", color: .red, size: .medium),
-        GridItem(title: "Small", color: .yellow, size: .small)
+        CustomGridItem(title: "Large", color: .blue, size: .large),
+        CustomGridItem(title: "Medium", color: .green, size: .medium),
+        CustomGridItem(title: "Small", color: .orange, size: .small),
+        CustomGridItem(title: "Large", color: .purple, size: .large),
+        CustomGridItem(title: "Medium", color: .red, size: .medium),
+        CustomGridItem(title: "Small", color: .yellow, size: .small)
     ]
     
     let columns = [
@@ -161,7 +161,7 @@ struct CustomGrid: View {
 }
 
 // 그리드 아이템 크기 열거형
-extension CustomGrid.GridItem {
+extension CustomGrid.CustomGridItem {
     enum Size {
         case small
         case medium

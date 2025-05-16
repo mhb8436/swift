@@ -127,4 +127,129 @@ func reduce<T>(_ array: [T], _ initial: T, _ combine: (T, T) -> T) -> T {
 }
 
 let sum = reduce(numbers, 0, +)
-print("Sum: \(sum)") 
+print("Sum: \(sum)")
+
+// MARK: - 클로저 심화 예제
+
+// 1. 클로저의 다양한 문법
+// 기본 문법
+let basicClosure = { (a: Int, b: Int) -> Int in
+    return a + b
+}
+
+// 타입 추론을 사용한 간단한 문법
+let simpleClosure = { a, b in a + b }
+
+// 단축 인자 이름 사용 ($0, $1, ...)
+let shorthandClosure = { $0 + $1 }
+
+print("Basic: \(basicClosure(5, 3))")
+print("Simple: \(simpleClosure(5, 3))")
+print("Shorthand: \(shorthandClosure(5, 3))")
+
+// 2. 클로저를 사용한 정렬
+let names = ["Chris", "Alex", "Barry", "Daniella"]
+let sortedNames = names.sorted { $0 < $1 }
+print("Sorted names: \(sortedNames)")
+
+// 3. 클로저를 사용한 비동기 작업 시뮬레이션
+func performAsyncTask(completion: @escaping (String) -> Void) {
+    DispatchQueue.global().asyncAfter(deadline: .now() + 1) {
+        completion("비동기 작업 완료!")
+    }
+}
+
+performAsyncTask { result in
+    print(result)
+}
+
+// 4. 클로저를 사용한 커링 (Currying)
+func multiply(_ a: Int) -> (Int) -> Int {
+    return { b in a * b }
+}
+
+let multiplyByTwo = multiply(2)
+print("2 * 5 = \(multiplyByTwo(5))")
+
+// 5. 클로저를 사용한 함수 합성
+func compose<T>(_ f: @escaping (T) -> T, _ g: @escaping (T) -> T) -> (T) -> T {
+    return { x in f(g(x)) }
+}
+
+let addOne = { $0 + 1 }
+let multiplyByThree = { $0 * 3 }
+let addOneThenMultiplyByThree = compose(multiplyByThree, addOne)
+print("(5 + 1) * 3 = \(addOneThenMultiplyByThree(5))")
+
+// 6. 클로저를 사용한 메모이제이션 (Memoization)
+func memoize<T: Hashable, U>(_ function: @escaping (T) -> U) -> (T) -> U {
+    var cache = [T: U]()
+    return { value in
+        if let cached = cache[value] {
+            return cached
+        }
+        let result = function(value)
+        cache[value] = result
+        return result
+    }
+}
+
+let fibonacci = memoize { (n: Int) -> Int in
+    if n <= 1 { return n }
+    return fibonacci(n - 1) + fibonacci(n - 2)
+}
+
+print("Fibonacci(10): \(fibonacci(10))")
+
+// 7. 클로저를 사용한 이벤트 핸들링
+class Button {
+    var onTap: (() -> Void)?
+    
+    func tap() {
+        onTap?()
+    }
+}
+
+let button = Button()
+button.onTap = {
+    print("버튼이 탭되었습니다!")
+}
+button.tap()
+
+// 8. 클로저를 사용한 데이터 변환 파이프라인
+let numbers2 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+let pipeline = numbers2
+    .filter { $0 % 2 == 0 }  // 짝수만 필터링
+    .map { $0 * $0 }         // 제곱
+    .reduce(0, +)            // 합계
+print("Pipeline result: \(pipeline)")
+
+// 9. 클로저를 사용한 재시도 로직
+func retry<T>(attempts: Int, delay: TimeInterval, operation: @escaping () -> T?) -> T? {
+    for attempt in 1...attempts {
+        if let result = operation() {
+            return result
+        }
+        if attempt < attempts {
+            Thread.sleep(forTimeInterval: delay)
+        }
+    }
+    return nil
+}
+
+// 10. 클로저를 사용한 디바운스 (Debounce)
+func debounce<T>(interval: TimeInterval, queue: DispatchQueue = .main, action: @escaping (T) -> Void) -> (T) -> Void {
+    var lastFireTime = DispatchTime.now()
+    let dispatchDelay = DispatchTimeInterval.milliseconds(Int(interval * 1000))
+    
+    return { param in
+        lastFireTime = DispatchTime.now()
+        queue.asyncAfter(deadline: .now() + interval) {
+            let now = DispatchTime.now()
+            let when = lastFireTime + dispatchDelay
+            if now >= when {
+                action(param)
+            }
+        }
+    }
+} 
