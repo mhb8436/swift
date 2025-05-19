@@ -7,16 +7,23 @@ struct MapView: View {
     
     var body: some View {
         NavigationView {
-            Map(
-                coordinateRegion: $viewModel.region,
-                showsUserLocation: true,
-                annotationItems: viewModel.spots
-            ) { spot in
-                MapAnnotation(coordinate: spot.coordinate) {
-                    SpotAnnotationView(spot: spot)
-                        .onTapGesture {
-                            viewModel.selectedSpot = spot
+            MapReader { proxy in
+                Map(position: $viewModel.region) {
+                    UserAnnotation()
+                    ForEach(viewModel.spots) { spot in
+                        Annotation("", coordinate: spot.coordinate) {
+                            SpotAnnotationView(spot: spot)
+                                .onTapGesture {
+                                    viewModel.selectedSpot = spot
+                                }
                         }
+                    }
+                }
+                .onTapGesture(coordinateSpace: .local) { location in
+                    if let coordinate = proxy.convert(location, from: .local) {
+                        viewModel.tappedLocation = coordinate
+                        viewModel.isShowingNewSpot = true
+                    }
                 }
             }
             .ignoresSafeArea(edges: .bottom)
@@ -24,17 +31,18 @@ struct MapView: View {
                 SpotDetailView(spot: spot, image: viewModel.loadImage(for: spot))
             }
             .sheet(isPresented: $viewModel.isShowingNewSpot) {
-                if let location = locationManager.location {
+                if let coordinate = viewModel.tappedLocation ?? locationManager.location?.coordinate {
                     NewSpotView(
-                        coordinate: location.coordinate,
+                        coordinate: coordinate,
                         onSave: { title, description, image in
                             viewModel.addPhotoSpot(
                                 title: title,
                                 description: description,
                                 image: image,
-                                coordinate: location.coordinate
+                                coordinate: coordinate
                             )
                             viewModel.isShowingNewSpot = false
+                            viewModel.tappedLocation = nil
                         }
                     )
                 }

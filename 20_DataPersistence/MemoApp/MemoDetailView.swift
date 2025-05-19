@@ -31,9 +31,17 @@ struct MemoDetailView: View {
     }
     
     private func saveMemo() {
-        memo.title = title
-        memo.content = content
-        try? viewContext.save()
-        dismiss()
+        if viewContext.hasChanges {
+            memo.title = title
+            memo.content = content
+            do {
+                try viewContext.save()
+                dismiss()
+            } catch {
+                print("메모 저장 중 오류 발생: \(error)")
+            }
+        } else {
+            dismiss()
+        }
     }
 }

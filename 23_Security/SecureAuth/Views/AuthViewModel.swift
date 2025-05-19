@@ -6,11 +6,27 @@ class AuthViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var isShowingError = false
     @Published var errorMessage: String?
+    @Published var currentUser: User?
     
     private let authService = AuthenticationService()
     
     init() {
         isAuthenticated = authService.isAuthenticated
+        if isAuthenticated {
+            Task {
+                await loadCurrentUser()
+            }
+        }
+    }
+    
+    private func loadCurrentUser() async {
+        do {
+            currentUser = try await authService.getCurrentUser()
+        } catch {
+            showError("사용자 정보를 불러오는데 실패했습니다.")
+            try? authService.logout()
+            isAuthenticated = false
+        }
     }
     
     func login(username: String, password: String) async {
@@ -18,6 +34,7 @@ class AuthViewModel: ObservableObject {
         do {
             try await authService.login(username: username, password: password)
             isAuthenticated = true
+            await loadCurrentUser()
         } catch let error as AuthenticationError {
             showError(error.description)
         } catch {
@@ -31,6 +48,7 @@ class AuthViewModel: ObservableObject {
         do {
             try await authService.register(username: username, email: email, password: password)
             isAuthenticated = true
+            await loadCurrentUser()
         } catch let error as AuthenticationError {
             showError(error.description)
         } catch {
@@ -43,6 +61,7 @@ class AuthViewModel: ObservableObject {
         do {
             try authService.logout()
             isAuthenticated = false
+            currentUser = nil
         } catch {
             showError("로그아웃 중 오류가 발생했습니다.")
         }

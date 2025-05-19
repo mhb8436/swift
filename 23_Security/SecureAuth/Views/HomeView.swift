@@ -8,9 +8,11 @@ struct HomeView: View {
             if viewModel.isAuthenticated {
                 NavigationView {
                     List {
-                        Section {
-                            Text("안전하게 로그인되었습니다!")
-                                .foregroundColor(.green)
+                        if let user = viewModel.currentUser {
+                            Section("사용자 정보") {
+                                LabeledContent("사용자 이름", value: user.username)
+                                LabeledContent("이메일", value: user.email)
+                            }
                         }
                         
                         Section {
@@ -20,6 +22,9 @@ struct HomeView: View {
                         }
                     }
                     .navigationTitle("홈")
+                    .refreshable {
+                        await viewModel.loadCurrentUser()
+                    }
                 }
             } else {
                 LoginView()

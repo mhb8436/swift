@@ -27,25 +27,55 @@ enum AuthenticationError: Error {
 }
 
 class AuthenticationService {
+    private let baseURL = "http://localhost:3000/api"
     private let keychainManager = KeychainManager.shared
     
-    // 실제 앱에서는 서버와 통신하여 인증을 처리합니다.
-    // 이 예제에서는 간단한 시뮬레이션을 합니다.
+    struct AuthResponse: Codable {
+        let token: String
+    }
+    
+    struct UserResponse: Codable {
+        let username: String
+        let email: String
+    }
+    
     func login(username: String, password: String) async throws {
-        // 서버 통신 시뮬레이션
-        try await Task.sleep(nanoseconds: 1_000_000_000)
-        
-        // 예제를 위한 간단한 검증
-        guard !username.isEmpty && !password.isEmpty else {
-            throw AuthenticationError.invalidCredentials
+        guard let url = URL(string: "\(baseURL)/login") else {
+            throw AuthenticationError.networkError
         }
         
-        // 인증 성공 시 Keychain에 저장
-        try keychainManager.saveCredentials(username: username, password: password)
+        let body = ["username": username, "password": password]
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(body)
+        
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw AuthenticationError.networkError
+            }
+            
+            if httpResponse.statusCode == 401 {
+                throw AuthenticationError.invalidCredentials
+            }
+            
+            guard (200...299).contains(httpResponse.statusCode) else {
+                throw AuthenticationError.networkError
+            }
+            
+            let authResponse = try JSONDecoder().decode(AuthResponse.self, from: data)
+            try keychainManager.saveToken(authResponse.token)
+        } catch {
+            if let error = error as? AuthenticationError {
+                throw error
+            }
+            throw AuthenticationError.networkError
+        }
     }
     
     func register(username: String, email: String, password: String) async throws {
-        // 입력 유효성 검사
         guard User.isValidEmail(email) else {
             throw AuthenticationError.invalidEmail
         }
@@ -54,28 +84,70 @@ class AuthenticationService {
             throw AuthenticationError.weakPassword
         }
         
-        // 서버 통신 시뮬레이션
-        try await Task.sleep(nanoseconds: 1_000_000_000)
+        guard let url = URL(string: "\(baseURL)/register") else {
+            throw AuthenticationError.networkError
+        }
         
-        // 등록 성공 시 자동 로그인
-        try await login(username: username, password: password)
+        let body = ["username": username, "email": email, "password": password]
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(body)
+        
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw AuthenticationError.networkError
+            }
+            
+            if httpResponse.statusCode == 400 {
+                throw AuthenticationError.userNotFound
+            }
+            
+            guard (200...299).contains(httpResponse.statusCode) else {
+                throw AuthenticationError.networkError
+            }
+            
+            let authResponse = try JSONDecoder().decode(AuthResponse.self, from: data)
+            try keychainManager.saveToken(authResponse.token)
+        } catch {
+            if let error = error as? AuthenticationError {
+                throw error
+            }
+            throw AuthenticationError.networkError
+        }
     }
     
     func logout() throws {
-        try keychainManager.deleteCredentials()
+        try keychainManager.deleteToken()
     }
     
-    func getCurrentUser() throws -> User? {
-        guard let credentials = try? keychainManager.getCredentials() else {
+    func getCurrentUser() async throws -> User? {
+        guard let token = try? keychainManager.getToken() else {
             return nil
         }
         
-        // 실제 앱에서는 서버에서 사용자 정보를 가져옵니다.
-        return User(
-            username: credentials.username,
-            email: "\(credentials.username)@example.com",
-            password: credentials.password
-        )
+        guard let url = URL(string: "\(baseURL)/user") else {
+            throw AuthenticationError.networkError
+        }
+        
+        var request = URLRequest(url: url)
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            
+            guard let httpResponse = response as? HTTPURLResponse,
+                  (200...299).contains(httpResponse.statusCode) else {
+                throw AuthenticationError.networkError
+            }
+            
+            let userResponse = try JSONDecoder().decode(UserResponse.self, from: data)
+            return User(username: userResponse.username, email: userResponse.email, password: "")
+        } catch {
+            throw AuthenticationError.networkError
+        }
     }
     
     var isAuthenticated: Bool {

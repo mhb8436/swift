@@ -73,5 +73,3 @@ SwiftUI의 Form과 List 활용
 Xcode에서 새로운 프로젝트를 생성할 때 "Use Core Data" 옵션을 선택하거나
 기존 프로젝트에 새로운 Core Data Model 파일을 추가
 이 예제를 통해 iOS 앱에서 자주 사용되는 데이터 영속성 패턴을 학습할 수 있습니다.
-
-다음 예제로 동시성(Concurrency) 관련 예제를 만들어드릴까요?

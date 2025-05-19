@@ -8,6 +8,7 @@ struct MemoApp: App {
         WindowGroup {
             MemoListView()
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
+                .navigationViewStyle(StackNavigationViewStyle())
         }
     }
 }

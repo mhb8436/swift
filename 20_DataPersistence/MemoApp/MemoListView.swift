@@ -3,15 +3,24 @@ import CoreData
 
 struct MemoListView: View {
     @Environment(\.managedObjectContext) private var viewContext
+    
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \Memo.createdAt, ascending: false)],
         animation: .default)
     private var memos: FetchedResults<Memo>
     
+    init() {
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithDefaultBackground()
+        UINavigationBar.appearance().standardAppearance = appearance
+        UINavigationBar.appearance().compactAppearance = appearance
+        UINavigationBar.appearance().scrollEdgeAppearance = appearance
+    }
+    
     @State private var isShowingNewMemo = false
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             List {
                 ForEach(memos) { memo in
                     NavigationLink {

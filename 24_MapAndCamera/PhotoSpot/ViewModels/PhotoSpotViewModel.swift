@@ -1,6 +1,8 @@
-import SwiftUI
+import Foundation
 import CoreLocation
 import MapKit
+import SwiftUI
+import _MapKit_SwiftUI
 
 @MainActor
 class PhotoSpotViewModel: ObservableObject {
@@ -8,10 +10,13 @@ class PhotoSpotViewModel: ObservableObject {
     @Published var selectedSpot: PhotoSpot?
     @Published var isShowingNewSpot = false
     @Published var error: Error?
+    @Published var tappedLocation: CLLocationCoordinate2D?
     
-    @Published var region = MKCoordinateRegion(
-        center: CLLocationCoordinate2D(latitude: 37.5665, longitude: 126.9780),
-        span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+    @Published var region = MapCameraPosition.region(
+        MKCoordinateRegion(
+            center: CLLocationCoordinate2D(latitude: 37.5665, longitude: 126.9780),
+            span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
+        )
     )
     
     private let imageManager = ImageManager.shared

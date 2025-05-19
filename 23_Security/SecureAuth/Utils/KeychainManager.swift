@@ -13,35 +13,37 @@ class KeychainManager {
     static let shared = KeychainManager()
     private init() {}
     
-    func saveCredentials(username: String, password: String) throws {
-        let credentials = "\(username):\(password)".data(using: .utf8)!
+    private let tokenKey = "authToken"
+    
+    func saveToken(_ token: String) throws {
+        let tokenData = token.data(using: .utf8)!
         
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrAccount as String: "userCredentials",
-            kSecValueData as String: credentials,
+            kSecAttrAccount as String: tokenKey,
+            kSecValueData as String: tokenData,
             kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlocked
         ]
         
         let status = SecItemAdd(query as CFDictionary, nil)
         
         if status == errSecDuplicateItem {
-            try updateCredentials(username: username, password: password)
+            try updateToken(token)
         } else if status != errSecSuccess {
             throw KeychainError.unhandledError(status: status)
         }
     }
     
-    func updateCredentials(username: String, password: String) throws {
-        let credentials = "\(username):\(password)".data(using: .utf8)!
+    func updateToken(_ token: String) throws {
+        let tokenData = token.data(using: .utf8)!
         
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrAccount as String: "userCredentials"
+            kSecAttrAccount as String: tokenKey
         ]
         
         let attributes: [String: Any] = [
-            kSecValueData as String: credentials
+            kSecValueData as String: tokenData
         ]
         
         let status = SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
@@ -51,10 +53,10 @@ class KeychainManager {
         }
     }
     
-    func getCredentials() throws -> (username: String, password: String) {
+    func getToken() throws -> String {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrAccount as String: "userCredentials",
+            kSecAttrAccount as String: tokenKey,
             kSecReturnData as String: true
         ]
         
@@ -63,22 +65,17 @@ class KeychainManager {
         
         guard status == errSecSuccess,
               let data = result as? Data,
-              let credentials = String(data: data, encoding: .utf8) else {
+              let token = String(data: data, encoding: .utf8) else {
             throw KeychainError.itemNotFound
         }
         
-        let components = credentials.split(separator: ":")
-        guard components.count == 2 else {
-            throw KeychainError.invalidItemFormat
-        }
-        
-        return (String(components[0]), String(components[1]))
+        return token
     }
     
-    func deleteCredentials() throws {
+    func deleteToken() throws {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrAccount as String: "userCredentials"
+            kSecAttrAccount as String: tokenKey
         ]
         
         let status = SecItemDelete(query as CFDictionary)
@@ -89,7 +86,7 @@ class KeychainManager {
     
     func isAuthenticated() -> Bool {
         do {
-            _ = try getCredentials()
+            _ = try getToken()
             return true
         } catch {
             return false

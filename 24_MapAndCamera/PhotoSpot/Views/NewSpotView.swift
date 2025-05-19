@@ -32,13 +32,18 @@ struct NewSpotView: View {
                     
                     HStack {
                         Button("카메라") {
-                            sourceType = .camera
+                            if UIImagePickerController.isSourceTypeAvailable(.camera) {
+                                sourceType = .camera
+                            }
                         }
+                        .disabled(!UIImagePickerController.isSourceTypeAvailable(.camera))
                         
                         Divider()
                         
-                        PhotosPicker(selection: $selectedItem, matching: .images) {
-                            Text("갤러리")
+                        if UIImagePickerController.isSourceTypeAvailable(.photoLibrary) {
+                            PhotosPicker(selection: $selectedItem, matching: .images) {
+                                Text("갤러리")
+                            }
                         }
                     }
                 }

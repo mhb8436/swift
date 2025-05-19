@@ -8,7 +8,7 @@ struct NewMemoView: View {
     @State private var content = ""
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             Form {
                 TextField("제목", text: $title)
                 TextEditor(text: $content)
